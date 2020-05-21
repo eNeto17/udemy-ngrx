@@ -8,6 +8,7 @@ import {tap} from "rxjs/operators";
 import {noop} from "rxjs";
 import {Router} from "@angular/router";
 import {AppState} from '../../reducers';
+import {login} from '../auth.actions';
 import {AuthActions} from '../action-types';
 
 @Component({
@@ -20,9 +21,9 @@ export class LoginComponent implements OnInit {
   form: FormGroup;
 
   constructor(
-      private fb: FormBuilder,
+      private fb:FormBuilder,
       private auth: AuthService,
-      private router: Router,
+      private router:Router,
       private store: Store<AppState>) {
 
       this.form = fb.group({
@@ -37,20 +38,28 @@ export class LoginComponent implements OnInit {
   }
 
   login() {
-    const val = this.form.value;
-    this.auth.login(val.email, val.password)
-      .pipe( // This will generate a new Observable
-        tap(user => {
-          console.log(user);
 
-          this.store.dispatch(AuthActions.login({user: user}));
+      const val = this.form.value;
 
-          this.router.navigateByUrl('/courses');
-        })
-      ) // As we generate a new observable we can subscribe to it
-      .subscribe(
-        noop, () => alert('Login failed...')
-    );
+      this.auth.login(val.email, val.password)
+          .pipe(
+              tap(user => {
+
+                  console.log(user);
+
+                  this.store.dispatch(login({user}));
+
+                  this.router.navigateByUrl('/courses');
+
+              })
+          )
+          .subscribe(
+              noop,
+              () => alert('Login Failed')
+          );
+
+
+
   }
 
 }

@@ -4,10 +4,7 @@ import {Course} from '../model/course';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Observable} from 'rxjs';
 import {CoursesHttpService} from '../services/courses-http.service';
-import {Update} from '@ngrx/entity';
-import {Store} from '@ngrx/store';
-import {AppState} from '../../reducers';
-import {CourseActions} from '../action-types';
+import {CourseEntityService} from '../services/course-entity.service';
 
 @Component({
   selector: 'course-dialog',
@@ -29,8 +26,8 @@ export class EditCourseDialogComponent {
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<EditCourseDialogComponent>,
-    private store: Store<AppState>,
-    @Inject(MAT_DIALOG_DATA) data) {
+    @Inject(MAT_DIALOG_DATA) data,
+    private courseEntityService: CourseEntityService) {
 
     this.dialogTitle = data.dialogTitle;
     this.course = data.course;
@@ -46,8 +43,7 @@ export class EditCourseDialogComponent {
     if (this.mode == 'update') {
       this.form = this.fb.group(formControls);
       this.form.patchValue({...data.course});
-    }
-    else if (this.mode == 'create') {
+    } else if (this.mode == 'create') {
       this.form = this.fb.group({
         ...formControls,
         url: ['', Validators.required],
@@ -61,19 +57,24 @@ export class EditCourseDialogComponent {
   }
 
   onSave() {
-
     const course: Course = {
       ...this.course,
       ...this.form.value
     };
 
-    const update: Update<Course> = {
-      id: course.id,
-      changes: course
-    };
+    if (this.mode === 'update') {
+      // This will update data in store and also will do a PUT (by convention) request to service
+      this.courseEntityService.update(course);
+      // NgRx Data by default has a pessimistic approach to update (first save on back, wait, and then update front)
 
-    this.store.dispatch(CourseActions.courseUpdated({update}));
-    this.dialogRef.close();
+      this.dialogRef.close();
+
+    } else if (this.mode === 'create') {
+
+      this.courseEntityService.add(course);
+      this.dialogRef.close();
+    }
+
   }
 
 
